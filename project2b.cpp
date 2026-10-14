@@ -96,39 +96,39 @@
         assert(eecsPQ.empty());
 
         //student add more test here
-        q.push(-5);
-        q.push(0);
-        q.push(8);
-        q.push(8);
-        q.push(2);
+        eecsPQ.push(-5);
+        eecsPQ.push(0);
+        eecsPQ.push(8);
+        eecsPQ.push(8);
+        eecsPQ.push(2);
 
-        assert(q.size() == 5);
-        assert(q.top() == 8);
+        assert(eecsPQ.size() == 5);
+        assert(eecsPQ.top() == 8);
 
         const std::vector<int> expected {8, 8, 2, 0, -5};
 
         for (int value : expected) {
-            assert(!q.empty());
-            assert(q.top() == value);
-            q.pop();
+            assert(!eecsPQ.empty());
+            assert(eecsPQ.top() == value);
+            eecsPQ.pop();
         }
 
-        assert(q.empty());
-        assert(q.size() == 0);
+        assert(eecsPQ.empty());
+        assert(eecsPQ.size() == 0);
 
-        q.push(10);
-        q.push(4);
-        assert(q.top() == 10);
-        q.pop();
-        assert(q.top() == 4);
+        eecsPQ.push(10);
+        eecsPQ.push(4);
+        assert(eecsPQ.top() == 10);
+        eecsPQ.pop();
+        assert(eecsPQ.top() == 4);
 
-        q.push(12);
-        assert(q.top() == 12);
-        q.pop();
-        assert(q.top() == 4);
-        q.pop();
+        eecsPQ.push(12);
+        assert(eecsPQ.top() == 12);
+        eecsPQ.pop();
+        assert(eecsPQ.top() == 4);
+        eecsPQ.pop();
 
-        assert(q.empty());
+        assert(eecsPQ.empty());
 
         std::cout << "testPrimitiveOperations succeeded!" << std::endl;
     } // testPrimitiveOperations()
@@ -154,6 +154,28 @@
         // TODO: Add code here to actually test with the HiddenData type.
         // Consider writing this code in the style of testPrimitiveOperations
         // above.
+        
+        PQ<HiddenData, HiddenDataComp> pq{};
+        Eecs281PQ<HiddenData, HiddenDataComp> &eecsPQ = pq;
+        eecsPQ.push(HiddenData{7});
+        eecsPQ.push(HiddenData{2});
+        eecsPQ.push(HiddenData{15});
+        eecsPQ.push(HiddenData{7});
+
+        assert(eecsPQ.size() == 4);
+        assert(eecsPQ.top().data == 15);
+
+        eecsPQ.pop();
+        assert(eecsPQ.top().data == 7);
+
+        eecsPQ.pop();
+        assert(eecsPQ.top().data == 7);
+
+        eecsPQ.pop();
+        assert(eecsPQ.top().data == 2);
+
+        eecsPQ.pop();
+        assert(eecsPQ.empty());
 
         std::cout << "testHiddenData succeeded!" << std::endl;
     } // testHiddenData()
@@ -186,8 +208,72 @@
         assert(eecsPQ.top() == &datum);
 
         // TODO: Add more testing here as you see fit.
+        eecsPQ.pop();
+        eecsPQ.pop();
+        assert(eecsPQ.size() == 0);
+
+        std::vector<int> moreDate {1, 5, 3, 9, 2};
+
+        for (const int& value : moreDate) {
+            eecsPQ.push(&value);
+        }
+
+        assert(eecsPQ.size() == moreDate.size());
+        assert(*eecsPQ.top() == 9);
+
+        moreDate[0] = 20;
+        moreDate[3] = -10;
+
+        eecsPQ.updatePriorities();
+
+        assert(eecsPQ.size() == 5);
+        assert(*eecsPQ.top() == 20);
+        assert(eecsPQ.top() == &moreDate[0]);
+
+        // Check the entire rebuilt priority order.
+        const std::vector<int> expected {20, 5, 3, 2, -10};
+
+        for (int value : expected) {
+            assert(!eecsPQ.empty());
+            assert(*eecsPQ.top() == value);
+            eecsPQ.pop();
+        }
+
+        assert(eecsPQ.empty());
+
+        // Empty queue must also rebuild safely.
+        eecsPQ.updatePriorities();
+        assert(eecsPQ.empty());
+
+        std::cout << "testUpdatePriorities succeeded!" << std::endl;
+
     } // testUpdatePriorities()
 
+    template <template <typename...> typename PQ>
+    void testRangeConstructor() {
+        const std::vector<int> values {4, 1, 9, 9, -2};
+
+        PQ<int> pq(values.begin(), values.end());
+
+        assert(pq.size() == values.size());
+
+        const std::vector<int> expected {9, 9, 4, 1, -2};
+
+        for (int value : expected) {
+            assert(!pq.empty());
+            assert(pq.top() == value);
+            pq.pop();
+        }
+
+        assert(pq.empty());
+
+        // Empty range.
+        const std::vector<int> emptyValues;
+        PQ<int> emptyPQ(emptyValues.begin(), emptyValues.end());
+
+        assert(emptyPQ.empty());
+        assert(emptyPQ.size() == 0);
+    }
 
     // Test the pairing heap's range-based constructor, copy constructor,
     // copy-assignment operator, and destructor
@@ -231,6 +317,97 @@
 
             // TODO: Add more code to test addNode, updateElt, etc.
 
+            // Test addNode and updateElt.
+            PairingPQ<int> handles;
+
+            auto* node10 = handles.addNode(10);
+            auto* node20 = handles.addNode(20);
+            auto* node30 = handles.addNode(30);
+
+            assert(handles.size() == 3);
+            assert(handles.top() == 30);
+
+            // Update the root to a more extreme value.
+            handles.updateElt(node30, 40);
+            assert(handles.top() == 40);
+
+            // Update a non-root node to a more extreme value.
+            handles.updateElt(node10, 35);
+            assert(handles.top() == 40);
+
+            // Update another node beyond the current root.
+            handles.updateElt(node20, 50);
+            assert(handles.top() == 50);
+            assert(handles.size() == 3);
+
+            // Verify complete removal order.
+            assert(handles.top() == 50);
+            handles.pop();
+            assert(handles.top() == 40);
+            handles.pop();
+            assert(handles.top() == 35);
+            handles.pop();
+            assert(handles.empty());
+
+            // Test an empty range constructor.
+            const std::vector<int> noValues;
+            PairingPQ<int> emptyPairing(
+                noValues.begin(), noValues.end());
+
+            assert(emptyPairing.empty());
+
+            // Test copy independence.
+            PairingPQ<int> original;
+            original.addNode(5);
+            original.addNode(12);
+            original.addNode(8);
+
+            PairingPQ<int> copied(original);
+            assert(copied.size() == original.size());
+            assert(copied.top() == original.top());
+
+            copied.pop();
+            assert(copied.top() == 8);
+            assert(original.top() == 12);
+
+            // Test assignment over a nonempty destination.
+            PairingPQ<int> assigned;
+            assigned.addNode(100);
+            assigned = original;
+
+            assert(assigned.size() == original.size());
+            assert(assigned.top() == 12);
+
+            assigned.pop();
+            assert(assigned.top() == 8);
+            assert(original.top() == 12);
+
+            // Test self-assignment.
+            assigned = assigned;
+            assert(assigned.top() == 8);
+
+            // Test updatePriorities on a populated pairing heap.
+            PairingPQ<int> rebuild;
+            rebuild.addNode(3);
+            rebuild.addNode(7);
+            rebuild.addNode(1);
+
+            rebuild.updatePriorities();
+            assert(rebuild.size() == 3);
+            assert(rebuild.top() == 7);
+
+            rebuild.pop();
+            assert(rebuild.top() == 3);
+
+            rebuild.pop();
+            assert(rebuild.top() == 1);
+
+            rebuild.pop();
+            assert(rebuild.empty());
+
+            rebuild.updatePriorities();
+            assert(rebuild.empty());
+            
             // That { above creates a scope, and our pairing heaps will fall out
             // of scope at the matching } below.
             std::cout << "Calling destructors" << std::endl;
@@ -246,6 +423,7 @@
         testPrimitiveOperations<PQ>();
         testHiddenData<PQ>();
         testUpdatePriorities<PQ>();
+        testRangeConstructor<PQ>();
     } // testPriorityQueue()
 
     // PairingPQ has some extra behavior we need to test in updateElement.
@@ -256,6 +434,7 @@
         testPrimitiveOperations<PairingPQ>();
         testHiddenData<PairingPQ>();
         testUpdatePriorities<PairingPQ>();
+        testRangeConstructor<PairingPQ>();
         testPairing();
     } // testPriorityQueue<PairingPQ>()
 
