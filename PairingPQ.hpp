@@ -41,6 +41,7 @@ public:
         TYPE elt;
         Node *child = nullptr;
         Node *sibling = nullptr;
+        Node *prev = nullptr;
         // TODO: Add and initialize one extra pointer (parent or previous) as desired.
     };  // Node
 
@@ -49,7 +50,7 @@ public:
     //              comparison functor.
     // Runtime: O(1)
     explicit PairingPQ(COMP_FUNCTOR comp = COMP_FUNCTOR())
-        : BaseClass { comp } {
+        : BaseClass { comp }, root(nullptr), count(0) {
         // TODO: Implement this function.
     }  // PairingPQ()
 
@@ -59,10 +60,11 @@ public:
     // Runtime: O(n) where n is number of elements in range.
     template<typename InputIterator>
     PairingPQ(InputIterator start, InputIterator end, COMP_FUNCTOR comp = COMP_FUNCTOR())
-        : BaseClass { comp } {
+        : BaseClass { comp }, root(nullptr), count(0)  {
         // TODO: Implement this function.
-        (void)start;  // Delete this line when you implement this function
-        (void)end;  // Delete this line when you implement this function
+        for(auto it = start; it != end; ++it){
+            addNode(*it);
+        }
     }  // PairingPQ()
 
 
@@ -71,8 +73,17 @@ public:
     PairingPQ(const PairingPQ &other)
         : BaseClass { other.compare } {
         // TODO: Implement this function.
-        // NOTE: The structure does not have to be identical to the original,
-        //       but it must still be a valid pairing heap.
+        queue<Node*> processing;
+        if (other.root) processing.push(other.root);
+        while (!processing.empty())
+        {
+            Node* curr = processing.front();
+            addNode(curr->elt);
+            if (curr->child) processing.push(curr->child);
+            if (curr->child) processing.push(curr->sibling);
+            processing.pop();
+        }
+        
     }  // PairingPQ()
 
 
@@ -82,7 +93,14 @@ public:
         // TODO: Implement this function.
         // HINT: Use the copy-swap method from the "Arrays and Containers"
         // lecture.
-        (void)rhs;  // Delete this line when you implement this function
+        if (this == &rhs) {
+            return *this;
+        }
+        PairingPQ t(rhs);
+        swap(root, temp.root);
+        swap(count, temp.count);
+        swap(this->compare, temp.compare);
+
         return *this;
     }  // operator=()
 
@@ -91,7 +109,18 @@ public:
     // Runtime: O(n)
     ~PairingPQ() {
         // TODO: Implement this function.
-        ;  // Delete this line, it prevents linter complaints
+        queue<Node*> processing;
+        if (root) processing.push(root);
+        while (!processing.empty())
+        {
+            Node* curr = processing.front();
+            if (curr->child) processing.push(curr->child);
+            if (curr->child) processing.push(curr->sibling);
+            delete curr;
+            processing.pop();
+        }
+        root = nullptr;
+        count = 0;
     }  // ~PairingPQ()
 
 
@@ -107,7 +136,28 @@ public:
     //              and create new ones!
     // Runtime: O(n)
     virtual void updatePriorities() {
-        // TODO: Implement this function.
+        vector<Node*> allNode;
+        queue<Node*> processing;
+        if (root) processing.push(root);
+        while (!processing.empty())
+        {
+            Node* curr = processing.front();
+            if (curr->child) processing.push(curr->child);
+            if (curr->sibling) processing.push(curr->sibling);
+            curr->child = nullptr;
+            curr->sibling = nullptr;
+            curr->prev = nullptr;
+            allNode.push_back(curr);
+            processing.pop();
+        }
+
+        Node* final = allNode.back();
+        for (size_t i = allNode.size() - 1; i > 0; --i) {
+            final = meld(allNode[i - 1], final);
+        }
+
+        root = final;
+
     }  // updatePriorities()
 
 
@@ -128,6 +178,41 @@ public:
     // Runtime: Amortized O(log(n))
     virtual void pop() {
         // TODO: Implement this function.
+        vector<Node*> rootSib;
+        Node* sib = root->child;
+        Node* next = nullptr;
+
+        while(sib){
+            next = sib->sibling;
+            isolate(sib);
+            rootSib.push_back(sib);
+            sib = next;
+        }
+
+        delete root;
+        root = nullptr;
+        --count;
+
+        if (rootSib.empty()) {
+            return;
+        }
+
+        vector<Node*> leftMerge;
+        for(size_t i=0; i<rootSib.size()-1; i+=2){
+            leftMerge.push_back(meld(rootSib[i],rootSib[i+1]));
+        }
+        if (rootSib.size()%2==1){
+            leftMerge.push_back(rootSib.back());
+        }
+
+        Node* final = leftMerge.back();
+        for (size_t i = leftMerge.size() - 1; i > 0; --i) {
+            final = meld(leftMerge[i - 1], final);
+        }
+
+        root = final;
+
+ 
     }  // pop()
 
 
@@ -140,9 +225,7 @@ public:
     virtual const TYPE &top() const {
         // TODO: Implement this function
 
-        // These lines are present only so that this provided file compiles.
-        static TYPE temp;  // TODO: Delete this line
-        return temp;  // TODO: Delete or change this line
+        return root->elt;
     }  // top()
 
 
@@ -150,14 +233,14 @@ public:
     // Runtime: O(1)
     [[nodiscard]] virtual std::size_t size() const {
         // TODO: Implement this function
-        return 0;  // TODO: Delete or change this line
+        return count;
     }  // size()
 
     // Description: Return true if the pairing heap is empty.
     // Runtime: O(1)
     [[nodiscard]] virtual bool empty() const {
         // TODO: Implement this function
-        return true;  // TODO: Delete or change this line
+        return count == 0;
     }  // empty()
 
 
@@ -170,9 +253,15 @@ public:
     //
     // Runtime: As discussed in reading material.
     void updateElt(Node *node, const TYPE &new_value) {
+
         // TODO: Implement this function
-        (void)node;  // Delete this line when you implement this function
-        (void)new_value;  // Delete this line when you implement this func
+        node->elt = new_value;
+        
+        if (node == root) {
+            return;
+        }
+        isolate(node);
+        root = meld(root, node);
     }  // updateElt()
 
 
@@ -185,8 +274,10 @@ public:
     //       when you implement updateElt() and updatePriorities().
     Node *addNode(const TYPE &val) {
         // TODO: Implement this function
-        (void)val;  // Delete this line when you implement this function
-        return nullptr;  // TODO: Delete or change this line
+        Node* newNode = new Node(val);
+        root = meld(root, newNode);
+        ++count;
+        return newNode;
     }  // addNode()
 
 
@@ -195,11 +286,62 @@ private:
     // require here.
     // TODO: We recommend creating a 'meld' function (see the Pairing Heap
     // papers).
+    Node* meld(Node* R, Node* otherRoot){
+        if (!otherRoot) return R;
+        if (!R) return otherRoot;
 
+        if (this->compare(otherRoot->elt, R->elt)){
+            otherRoot->prev = R;
+            otherRoot->sibling = R->child;
+
+            if (R->child) {
+                R->child->prev = otherRoot;
+            }
+
+            R->child; = otherRoot;
+
+            return R;
+        }
+        else{
+            R->prev = otherRoot;
+            R->sibling = otherRoot->child;
+
+            if (otherRoot->child) {
+                otherRoot->child->prev = R;
+            }
+
+            otherRoot->child = R;
+
+            return otherRoot;
+        }
+    }
+
+    void isolate(Node* alone){
+        if (alone == root) return root;
+        if (alone->prev->child == alone){
+            //im a left child
+            alone->prev->child = alone->sibling;
+            if (alone->sibling) alone->sibling->prev = alone->prev;
+
+            alone->prev = nullptr;
+            alone->sibling = nullptr;
+        }
+        else{
+            //im a sibily of other
+            alone->prev->sibling = alone->sibling;
+            if (alone->sibling) alone->sibling->prev = alone->prev;
+
+            alone->prev = nullptr;
+            alone->sibling = nullptr;            
+        }
+    }
     // NOTE: For member variables, you are only allowed to add a "root
     //       pointer" and a "count" of the number of nodes. Anything else
     //       (such as a deque) should be declared inside of member functions
     //       as needed.
+    Node* root;
+    size_t size;
+
 };
 
 

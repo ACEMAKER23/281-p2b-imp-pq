@@ -28,10 +28,9 @@ public:
     // Runtime: O(n) where n is number of elements in range.
     template<typename InputIterator>
     BinaryPQ(InputIterator start, InputIterator end, COMP_FUNCTOR comp = COMP_FUNCTOR())
-        : BaseClass { comp } {
+        : BaseClass { comp }, data(start, end) {
         // TODO: Implement this function
-        (void)start;  // Delete this line when you implement this function
-        (void)end;  // Delete this line when you implement this function
+        updatePriorities();
     }  // BinaryPQ
 
 
@@ -56,7 +55,16 @@ public:
     //              'rebuilds' the heap by fixing the heap invariant.
     // Runtime: O(n)
     virtual void updatePriorities() {
-        // TODO: Implement this function.
+        if (data.size() == 0) return;
+
+        size_t index = data.size() - 1;
+        while(true){
+            fixDown(index);
+            if (index == 0){
+                break;
+            }
+            --index;
+        }
     }  // updatePriorities()
 
 
@@ -64,7 +72,8 @@ public:
     // Runtime: O(log(n))
     virtual void push(const TYPE &val) {
         // TODO: Implement this function.
-        (void)val;  // Delete this line when you implement this function
+        data.push_back(val);
+        fixUp(data.size()-1);
     }  // push()
 
 
@@ -75,8 +84,13 @@ public:
     // familiar with them, you do not need to use exceptions in this project.
     // Runtime: O(log(n))
     virtual void pop() {
-        // TODO: Implement this function.
-    }  // pop()
+        std::swap(data[0], data.back());
+        data.pop_back();
+
+        if (!data.empty()) {
+            fixDown(0);
+        }
+    }// pop()
 
 
     // Description: Return the most extreme (defined by 'compare') element of
@@ -87,9 +101,7 @@ public:
     virtual const TYPE &top() const {
         // TODO: Implement this function.
 
-        // These lines are present only so that this provided file compiles.
-        static TYPE temp;  // TODO: Delete this line
-        return temp;  // TODO: Delete or change this line
+        return data[0];
     }  // top()
 
 
@@ -98,7 +110,7 @@ public:
     [[nodiscard]] virtual std::size_t size() const {
         // TODO: Implement this function. Might be very simple,
         // depending on your implementation.
-        return 0;  // TODO: Delete or change this line
+        return data.size();
     }  // size()
 
 
@@ -107,7 +119,7 @@ public:
     [[nodiscard]] virtual bool empty() const {
         // TODO: Implement this function. Might be very simple,
         // depending on your implementation.
-        return true;  // TODO: Delete or change this line
+        return data.size() == 0;
     }  // empty()
 
 
@@ -117,7 +129,40 @@ private:
     // NOTE: You are not allowed to add any member variables. You don't need
     //       a "heapSize", since you can call your own size() member
     //       function, or check data.size().
+    size_t leftChildren(size_t i){
+        return 2*i+1;
+    }
+    size_t rightChildren(size_t i){
+        return 2*i+2;
+    }
+    size_t parentOf(size_t i){
+        return (i-1)/2;
+    }
+    void fixDown(size_t i){
+        size_t child = leftChildren(i);
+        size_t right = rightChildren(i);
 
+        if (child >= data.size()) {
+            return;
+        }
+        
+        if (right < data.size() && this->compare(data[child], data[right])){
+            child = right;
+        }
+
+        if (this->compare(data[i], data[child])){
+            swap(data[i], data[child]);
+            fixDown(child);
+        }
+
+    }
+    void fixUp(size_t i){
+        size_t parent = parentOf(i);
+        if (i != 0 && this->compare(data[parent], data[i])){
+            swap(data[parent], data[i]);
+            fixUp(parent);
+        }
+    }
     // TODO: Add any additional member functions you require here.
     //       For instance, you might add fixUp() and fixDown().
 };  // BinaryPQ
