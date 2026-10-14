@@ -6,7 +6,7 @@
 #include <functional>
 #include <iterator>
 #include <vector>
-
+using namespace std;
 // A simple interface that implements a generic priority queue.
 // Runtime specifications assume constant time comparison and copying.
 template<typename TYPE, typename COMP_FUNCTOR = std::less<TYPE>>

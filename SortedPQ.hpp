@@ -7,6 +7,7 @@
 #include <iostream>
 
 #include "Eecs281PQ.hpp"
+using namespace std;
 
 // A specialized version of the priority queue ADT that is implemented with an
 // underlying sorted array-based container.

@@ -5,8 +5,11 @@
 
 #include <deque>
 #include <utility>
+#include <queue>
+#include <vector>
 
 #include "Eecs281PQ.hpp"
+using namespace std;
 
 // A specialized version of the priority queue ADT implemented as a pairing
 // heap.
@@ -71,7 +74,7 @@ public:
     // Description: Copy constructor.
     // Runtime: O(n)
     PairingPQ(const PairingPQ &other)
-        : BaseClass { other.compare } {
+        : BaseClass { other.compare }, root(nullptr), count(0) {
         // TODO: Implement this function.
         queue<Node*> processing;
         if (other.root) processing.push(other.root);
@@ -80,7 +83,7 @@ public:
             Node* curr = processing.front();
             addNode(curr->elt);
             if (curr->child) processing.push(curr->child);
-            if (curr->child) processing.push(curr->sibling);
+            if (curr->sibling) processing.push(curr->sibling);
             processing.pop();
         }
         
@@ -97,9 +100,9 @@ public:
             return *this;
         }
         PairingPQ t(rhs);
-        swap(root, temp.root);
-        swap(count, temp.count);
-        swap(this->compare, temp.compare);
+        swap(root, t.root);
+        swap(count, t.count);
+        swap(this->compare, t.compare);
 
         return *this;
     }  // operator=()
@@ -115,7 +118,7 @@ public:
         {
             Node* curr = processing.front();
             if (curr->child) processing.push(curr->child);
-            if (curr->child) processing.push(curr->sibling);
+            if (curr->sibling) processing.push(curr->sibling);
             delete curr;
             processing.pop();
         }
@@ -138,7 +141,10 @@ public:
     virtual void updatePriorities() {
         vector<Node*> allNode;
         queue<Node*> processing;
+
         if (root) processing.push(root);
+        else return;
+
         while (!processing.empty())
         {
             Node* curr = processing.front();
@@ -298,7 +304,7 @@ private:
                 R->child->prev = otherRoot;
             }
 
-            R->child; = otherRoot;
+            R->child = otherRoot;
 
             return R;
         }
@@ -317,7 +323,7 @@ private:
     }
 
     void isolate(Node* alone){
-        if (alone == root) return root;
+        if (alone == root) return;
         if (alone->prev->child == alone){
             //im a left child
             alone->prev->child = alone->sibling;
@@ -340,7 +346,7 @@ private:
     //       (such as a deque) should be declared inside of member functions
     //       as needed.
     Node* root;
-    size_t size;
+    size_t count;
 
 };
 
